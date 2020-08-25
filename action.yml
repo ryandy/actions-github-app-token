@@ -1,11 +1,19 @@
-name: 'Your name here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
+name: actions-github-app-token
+description: Obtain a GitHub App installation token
+author: Ryan Anderson
 inputs:
-  milliseconds: # change this
+  GITHUB_APP_ID:
+    description: your GitHub App ID
     required: true
-    description: 'input description here'
-    default: 'default value if applicable'
+  GITHUB_APP_PEM:
+    description: base64 encoded string of your GitHub App PEM file (`cat key.pem | base64`)
+    required: true
+outputs:
+  GITHUB_APP_TOKEN:
+    description: installation access token for the GitHub App
+branding:
+  color: 'green'
+  icon: 'user-check'
 runs:
   using: 'node12'
   main: 'dist/index.js'

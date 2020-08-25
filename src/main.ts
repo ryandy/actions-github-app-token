@@ -1,16 +1,19 @@
 import * as core from '@actions/core'
-import {wait} from './wait'
+import {get_app_token} from './wait'
 
 async function run(): Promise<void> {
   try {
-    const ms: string = core.getInput('milliseconds')
-    core.debug(`Waiting ${ms} milliseconds ...`) // debug is only output if you set the secret `ACTIONS_RUNNER_DEBUG` to true
+    const app_id: string = core.getInput('GITHUB_APP_ID')
+    const app_pem_encoded: string = core.getInput('GITHUB_APP_PEM')
+    const repository: string = process.env.GITHUB_REPOSITORY
 
-    core.debug(new Date().toTimeString())
-    await wait(parseInt(ms, 10))
-    core.debug(new Date().toTimeString())
+    core.info(`App ID: ${app_id}`)
+    core.info(`Repo: ${repository}`)
+    //core.info(`PEM encoded: ${app_pem_encoded}`)
 
-    core.setOutput('time', new Date().toTimeString())
+    const app_token: string = await get_app_token(app_id, app_pem_encoded, repository)
+    core.setSecret(app_token)
+    core.setOutput('GITHUB_APP_TOKEN', app_token)
   } catch (error) {
     core.setFailed(error.message)
   }
