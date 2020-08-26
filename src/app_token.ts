@@ -1,6 +1,5 @@
 import {createAppAuth} from '@octokit/auth-app'
 import {Octokit} from '@octokit/rest'
-import {OctokitResponse} from '@octokit/types'
 
 
 export async function getAppToken(appId: string,
@@ -21,13 +20,13 @@ export async function getAppToken(appId: string,
 
   // Using the App auth and repo name, obtain the App installation ID.
   // See https://docs.github.com/en/rest/reference/apps
-  const installationResponse: OctokitResponse<any> = await appOctokit.request(
+  const installationResponse = await appOctokit.request(
     `/repos/${owner}/${repo}/installation`
   )
 
   // Finally, use the App auth and installation ID to obtain an App installation access token.
   // See https://octokit.github.io/rest.js/v18#apps
-  const tokenResponse: OctokitResponse<any> = await appOctokit.apps.createInstallationAccessToken({
+  const tokenResponse = await appOctokit.apps.createInstallationAccessToken({
     installation_id: installationResponse.data['id'],
   })
   return tokenResponse.data['token']
