@@ -1,19 +1,22 @@
 import * as core from '@actions/core'
-import {get_app_token} from './wait'
+
+import {getAppToken} from './app_token'
+
 
 async function run(): Promise<void> {
   try {
-    const app_id: string = core.getInput('GITHUB_APP_ID')
-    const app_pem_encoded: string = core.getInput('GITHUB_APP_PEM')
+    // The App ID and private key are required Action inputs.
+    const appId: string = core.getInput('GITHUB_APP_ID')
+    const appPemEncoded: string = core.getInput('GITHUB_APP_PEM')
+
+    if (!process.env.GITHUB_REPOSITORY) {
+      throw new Error('Unexpected error: Missing GITHUB_REPOSITORY env variable');
+    }
     const repository: string = process.env.GITHUB_REPOSITORY
 
-    core.info(`App ID: ${app_id}`)
-    core.info(`Repo: ${repository}`)
-    //core.info(`PEM encoded: ${app_pem_encoded}`)
-
-    const app_token: string = await get_app_token(app_id, app_pem_encoded, repository)
-    core.setSecret(app_token)
-    core.setOutput('GITHUB_APP_TOKEN', app_token)
+    const appToken: string = await getAppToken(appId, appPemEncoded, repository)
+    core.setSecret(appToken)
+    core.setOutput('GITHUB_APP_TOKEN', appToken)
   } catch (error) {
     core.setFailed(error.message)
   }

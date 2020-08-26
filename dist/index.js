@@ -1898,17 +1898,20 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const core = __importStar(__webpack_require__(186));
-const wait_1 = __webpack_require__(817);
+const app_token_1 = __webpack_require__(340);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            const app_id = core.getInput('GITHUB_APP_ID');
-            const app_pem_encoded = core.getInput('GITHUB_APP_PEM');
-            core.info(`ID: ${app_id}`);
-            //core.info(`PEM encoded: ${app_pem_encoded}`)
-            const app_token = yield wait_1.get_app_token(app_id, app_pem_encoded, "blah");
-            core.setSecret(app_token);
-            core.setOutput('GITHUB_APP_TOKEN', app_token);
+            // The App ID and private key are required Action inputs.
+            const appId = core.getInput('GITHUB_APP_ID');
+            const appPemEncoded = core.getInput('GITHUB_APP_PEM');
+            if (!process.env.GITHUB_REPOSITORY) {
+                throw new Error('Unexpected error: Missing GITHUB_REPOSITORY env variable');
+            }
+            const repository = process.env.GITHUB_REPOSITORY;
+            const appToken = yield app_token_1.getAppToken(appId, appPemEncoded, repository);
+            core.setSecret(appToken);
+            core.setOutput('GITHUB_APP_TOKEN', appToken);
         }
         catch (error) {
             core.setFailed(error.message);
@@ -3854,91 +3857,6 @@ module.exports = isString;
 
 /***/ }),
 
-/***/ 182:
-/***/ (function(module, __unusedexports, __webpack_require__) {
-
-/*global module*/
-var Buffer = __webpack_require__(867).Buffer;
-var DataStream = __webpack_require__(868);
-var jwa = __webpack_require__(10);
-var Stream = __webpack_require__(413);
-var toString = __webpack_require__(292);
-var util = __webpack_require__(669);
-
-function base64url(string, encoding) {
-  return Buffer
-    .from(string, encoding)
-    .toString('base64')
-    .replace(/=/g, '')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_');
-}
-
-function jwsSecuredInput(header, payload, encoding) {
-  encoding = encoding || 'utf8';
-  var encodedHeader = base64url(toString(header), 'binary');
-  var encodedPayload = base64url(toString(payload), encoding);
-  return util.format('%s.%s', encodedHeader, encodedPayload);
-}
-
-function jwsSign(opts) {
-  var header = opts.header;
-  var payload = opts.payload;
-  var secretOrKey = opts.secret || opts.privateKey;
-  var encoding = opts.encoding;
-  var algo = jwa(header.alg);
-  var securedInput = jwsSecuredInput(header, payload, encoding);
-  var signature = algo.sign(securedInput, secretOrKey);
-  return util.format('%s.%s', securedInput, signature);
-}
-
-function SignStream(opts) {
-  var secret = opts.secret||opts.privateKey||opts.key;
-  var secretStream = new DataStream(secret);
-  this.readable = true;
-  this.header = opts.header;
-  this.encoding = opts.encoding;
-  this.secret = this.privateKey = this.key = secretStream;
-  this.payload = new DataStream(opts.payload);
-  this.secret.once('close', function () {
-    if (!this.payload.writable && this.readable)
-      this.sign();
-  }.bind(this));
-
-  this.payload.once('close', function () {
-    if (!this.secret.writable && this.readable)
-      this.sign();
-  }.bind(this));
-}
-util.inherits(SignStream, Stream);
-
-SignStream.prototype.sign = function sign() {
-  try {
-    var signature = jwsSign({
-      header: this.header,
-      payload: this.payload.buffer,
-      secret: this.secret.buffer,
-      encoding: this.encoding
-    });
-    this.emit('done', signature);
-    this.emit('data', signature);
-    this.emit('end');
-    this.readable = false;
-    return signature;
-  } catch (e) {
-    this.readable = false;
-    this.emit('error', e);
-    this.emit('close');
-  }
-};
-
-SignStream.sign = jwsSign;
-
-module.exports = SignStream;
-
-
-/***/ }),
-
 /***/ 186:
 /***/ (function(__unusedmodule, exports, __webpack_require__) {
 
@@ -4910,58 +4828,133 @@ module.exports = function (jwtString, secretOrPublicKey, options, callback) {
 /***/ }),
 
 /***/ 334:
-/***/ (function(__unusedmodule, exports) {
+/***/ (function(module, __unusedexports, __webpack_require__) {
+
+/*global module*/
+var Buffer = __webpack_require__(867).Buffer;
+var DataStream = __webpack_require__(868);
+var jwa = __webpack_require__(10);
+var Stream = __webpack_require__(413);
+var toString = __webpack_require__(292);
+var util = __webpack_require__(669);
+
+function base64url(string, encoding) {
+  return Buffer
+    .from(string, encoding)
+    .toString('base64')
+    .replace(/=/g, '')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_');
+}
+
+function jwsSecuredInput(header, payload, encoding) {
+  encoding = encoding || 'utf8';
+  var encodedHeader = base64url(toString(header), 'binary');
+  var encodedPayload = base64url(toString(payload), encoding);
+  return util.format('%s.%s', encodedHeader, encodedPayload);
+}
+
+function jwsSign(opts) {
+  var header = opts.header;
+  var payload = opts.payload;
+  var secretOrKey = opts.secret || opts.privateKey;
+  var encoding = opts.encoding;
+  var algo = jwa(header.alg);
+  var securedInput = jwsSecuredInput(header, payload, encoding);
+  var signature = algo.sign(securedInput, secretOrKey);
+  return util.format('%s.%s', securedInput, signature);
+}
+
+function SignStream(opts) {
+  var secret = opts.secret||opts.privateKey||opts.key;
+  var secretStream = new DataStream(secret);
+  this.readable = true;
+  this.header = opts.header;
+  this.encoding = opts.encoding;
+  this.secret = this.privateKey = this.key = secretStream;
+  this.payload = new DataStream(opts.payload);
+  this.secret.once('close', function () {
+    if (!this.payload.writable && this.readable)
+      this.sign();
+  }.bind(this));
+
+  this.payload.once('close', function () {
+    if (!this.secret.writable && this.readable)
+      this.sign();
+  }.bind(this));
+}
+util.inherits(SignStream, Stream);
+
+SignStream.prototype.sign = function sign() {
+  try {
+    var signature = jwsSign({
+      header: this.header,
+      payload: this.payload.buffer,
+      secret: this.secret.buffer,
+      encoding: this.encoding
+    });
+    this.emit('done', signature);
+    this.emit('data', signature);
+    this.emit('end');
+    this.readable = false;
+    return signature;
+  } catch (e) {
+    this.readable = false;
+    this.emit('error', e);
+    this.emit('close');
+  }
+};
+
+SignStream.sign = jwsSign;
+
+module.exports = SignStream;
+
+
+/***/ }),
+
+/***/ 340:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
 
 "use strict";
 
-
-Object.defineProperty(exports, '__esModule', { value: true });
-
-async function auth(token) {
-  const tokenType = token.split(/\./).length === 3 ? "app" : /^v\d+\./.test(token) ? "installation" : "oauth";
-  return {
-    type: "token",
-    token: token,
-    tokenType
-  };
-}
-
-/**
- * Prefix token for usage in the Authorization header
- *
- * @param token OAuth token or JSON Web Token
- */
-function withAuthorizationPrefix(token) {
-  if (token.split(/\./).length === 3) {
-    return `bearer ${token}`;
-  }
-
-  return `token ${token}`;
-}
-
-async function hook(token, request, route, parameters) {
-  const endpoint = request.endpoint.merge(route, parameters);
-  endpoint.headers.authorization = withAuthorizationPrefix(token);
-  return request(endpoint);
-}
-
-const createTokenAuth = function createTokenAuth(token) {
-  if (!token) {
-    throw new Error("[@octokit/auth-token] No token passed to createTokenAuth");
-  }
-
-  if (typeof token !== "string") {
-    throw new Error("[@octokit/auth-token] Token passed to createTokenAuth is not a string");
-  }
-
-  token = token.replace(/^(token|bearer) +/i, "");
-  return Object.assign(auth.bind(null, token), {
-    hook: hook.bind(null, token)
-  });
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
 };
-
-exports.createTokenAuth = createTokenAuth;
-//# sourceMappingURL=index.js.map
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getAppToken = void 0;
+const auth_app_1 = __webpack_require__(541);
+const rest_1 = __webpack_require__(375);
+function getAppToken(appId, appPemEncoded, repository) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const appPem = Buffer.from(appPemEncoded, 'base64').toString();
+        const [owner, repo] = repository.split('/');
+        // Using the App ID and private key, create an App auth.
+        // See https://octokit.github.io/rest.js/v18#authentication
+        const appOctokit = new rest_1.Octokit({
+            authStrategy: auth_app_1.createAppAuth,
+            auth: {
+                id: parseInt(appId),
+                privateKey: appPem,
+            },
+        });
+        // Using the App auth and repo name, obtain the App installation ID.
+        // See https://docs.github.com/en/rest/reference/apps
+        const installationResponse = yield appOctokit.request(`/repos/${owner}/${repo}/installation`);
+        // Finally, use the App auth and installation ID to obtain an App installation access token.
+        // See https://octokit.github.io/rest.js/v18#apps
+        const tokenResponse = yield appOctokit.apps.createInstallationAccessToken({
+            installation_id: installationResponse.data['id'],
+        });
+        return tokenResponse.data['token'];
+    });
+}
+exports.getAppToken = getAppToken;
 
 
 /***/ }),
@@ -5122,6 +5115,63 @@ const Octokit = core.Octokit.plugin(pluginRequestLog.requestLog, pluginRestEndpo
 });
 
 exports.Octokit = Octokit;
+//# sourceMappingURL=index.js.map
+
+
+/***/ }),
+
+/***/ 379:
+/***/ (function(__unusedmodule, exports) {
+
+"use strict";
+
+
+Object.defineProperty(exports, '__esModule', { value: true });
+
+async function auth(token) {
+  const tokenType = token.split(/\./).length === 3 ? "app" : /^v\d+\./.test(token) ? "installation" : "oauth";
+  return {
+    type: "token",
+    token: token,
+    tokenType
+  };
+}
+
+/**
+ * Prefix token for usage in the Authorization header
+ *
+ * @param token OAuth token or JSON Web Token
+ */
+function withAuthorizationPrefix(token) {
+  if (token.split(/\./).length === 3) {
+    return `bearer ${token}`;
+  }
+
+  return `token ${token}`;
+}
+
+async function hook(token, request, route, parameters) {
+  const endpoint = request.endpoint.merge(route, parameters);
+  endpoint.headers.authorization = withAuthorizationPrefix(token);
+  return request(endpoint);
+}
+
+const createTokenAuth = function createTokenAuth(token) {
+  if (!token) {
+    throw new Error("[@octokit/auth-token] No token passed to createTokenAuth");
+  }
+
+  if (typeof token !== "string") {
+    throw new Error("[@octokit/auth-token] Token passed to createTokenAuth is not a string");
+  }
+
+  token = token.replace(/^(token|bearer) +/i, "");
+  return Object.assign(auth.bind(null, token), {
+    hook: hook.bind(null, token)
+  });
+};
+
+exports.createTokenAuth = createTokenAuth;
 //# sourceMappingURL=index.js.map
 
 
@@ -8576,7 +8626,7 @@ module.exports = require("path");
 /***/ (function(__unusedmodule, exports, __webpack_require__) {
 
 /*global exports*/
-var SignStream = __webpack_require__(182);
+var SignStream = __webpack_require__(334);
 var VerifyStream = __webpack_require__(522);
 
 var ALGORITHMS = [
@@ -9623,7 +9673,7 @@ var universalUserAgent = __webpack_require__(30);
 var beforeAfterHook = __webpack_require__(682);
 var request = __webpack_require__(234);
 var graphql = __webpack_require__(668);
-var authToken = __webpack_require__(334);
+var authToken = __webpack_require__(379);
 
 function _defineProperty(obj, key, value) {
   if (key in obj) {
@@ -9791,52 +9841,6 @@ Octokit.plugins = [];
 
 exports.Octokit = Octokit;
 //# sourceMappingURL=index.js.map
-
-
-/***/ }),
-
-/***/ 817:
-/***/ (function(__unusedmodule, exports, __webpack_require__) {
-
-"use strict";
-
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.get_app_token = void 0;
-const rest_1 = __webpack_require__(375);
-const auth_app_1 = __webpack_require__(541);
-//core.info(`PEM: ${app_pem}`)
-//const app = new App({ id: app_id, privateKey: app_pem });
-//const jwt = app.getSignedJsonWebToken();
-//core.info(`jwt: ${jwt}`)
-//const result = await appOctokit.request(result.data["access_tokens_url"])
-function get_app_token(app_id, app_pem_encoded, repo) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const app_pem = Buffer.from(app_pem_encoded, 'base64').toString();
-        const appOctokit = new rest_1.Octokit({
-            authStrategy: auth_app_1.createAppAuth,
-            auth: {
-                id: parseInt(app_id),
-                privateKey: app_pem,
-            },
-        });
-        const installation_result = yield appOctokit.request("/repos/ryandy/action-app-test/installation");
-        //const installation_id: number = result.data["id"]
-        const token_result = yield appOctokit.apps.createInstallationAccessToken({
-            installation_id: installation_result.data["id"],
-        });
-        return token_result.data["token"];
-    });
-}
-exports.get_app_token = get_app_token;
 
 
 /***/ }),
