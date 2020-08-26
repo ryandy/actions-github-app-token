@@ -1,16 +1,22 @@
 import * as core from '@actions/core'
-import {wait} from './wait'
+
+import {getAppToken} from './app_token'
+
 
 async function run(): Promise<void> {
   try {
-    const ms: string = core.getInput('milliseconds')
-    core.debug(`Waiting ${ms} milliseconds ...`) // debug is only output if you set the secret `ACTIONS_RUNNER_DEBUG` to true
+    // The App ID and private key are required Action inputs.
+    const appId: string = core.getInput('GITHUB_APP_ID')
+    const appPemEncoded: string = core.getInput('GITHUB_APP_PEM')
 
-    core.debug(new Date().toTimeString())
-    await wait(parseInt(ms, 10))
-    core.debug(new Date().toTimeString())
+    if (!process.env.GITHUB_REPOSITORY) {
+      throw new Error('Unexpected error: Missing GITHUB_REPOSITORY env variable');
+    }
+    const repository: string = process.env.GITHUB_REPOSITORY
 
-    core.setOutput('time', new Date().toTimeString())
+    const appToken: string = await getAppToken(appId, appPemEncoded, repository)
+    core.setSecret(appToken)
+    core.setOutput('GITHUB_APP_TOKEN', appToken)
   } catch (error) {
     core.setFailed(error.message)
   }

@@ -1,5 +1,5 @@
 {
-  "name": "typescript-action",
+  "name": "actions-github-app-token",
   "version": "0.0.0",
   "private": true,
   "description": "TypeScript template action",
@@ -15,17 +15,20 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/actions/typescript-action.git"
+    "url": "git+https://github.com/ryandy/actions-github-app-token.git"
   },
   "keywords": [
     "actions",
-    "node",
-    "setup"
+    "github",
+    "app",
+    "token"
   ],
-  "author": "",
+  "author": "Ryan Anderson",
   "license": "MIT",
   "dependencies": {
-    "@actions/core": "^1.2.4"
+    "@actions/core": "^1.2.4",
+    "@octokit/auth-app": "^2.4.14",
+    "@octokit/rest": "^18.0.3"
   },
   "devDependencies": {
     "@types/jest": "^26.0.10",
