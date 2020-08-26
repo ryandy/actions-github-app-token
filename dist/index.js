@@ -1908,8 +1908,8 @@ function run() {
             if (!process.env.GITHUB_REPOSITORY) {
                 throw new Error('Unexpected error: Missing GITHUB_REPOSITORY env variable');
             }
-            const repository = process.env.GITHUB_REPOSITORY;
-            const appToken = yield app_token_1.getAppToken(appId, appPemEncoded, repository);
+            const repo = process.env.GITHUB_REPOSITORY;
+            const appToken = yield app_token_1.getAppToken(appId, appPemEncoded, repo);
             core.setSecret(appToken);
             core.setOutput('GITHUB_APP_TOKEN', appToken);
         }
@@ -4930,10 +4930,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.getAppToken = void 0;
 const auth_app_1 = __webpack_require__(541);
 const rest_1 = __webpack_require__(375);
-function getAppToken(appId, appPemEncoded, repository) {
+function getAppToken(appId, appPemEncoded, repo) {
     return __awaiter(this, void 0, void 0, function* () {
         const appPem = Buffer.from(appPemEncoded, 'base64').toString();
-        const [owner, repo] = repository.split('/');
         // Using the App ID and private key, create an App auth.
         // See https://octokit.github.io/rest.js/v18#authentication
         const appOctokit = new rest_1.Octokit({
@@ -4945,11 +4944,17 @@ function getAppToken(appId, appPemEncoded, repository) {
         });
         // Using the App auth and repo name, obtain the App installation ID.
         // See https://docs.github.com/en/rest/reference/apps
-        const installationResponse = yield appOctokit.request(`/repos/${owner}/${repo}/installation`);
+        const installationResponse = yield appOctokit.request(`/repos/${repo}/installation`);
+        const installationId = installationResponse.data['id'];
+        // Get the current repo's ID.
+        const defaultOctokit = new rest_1.Octokit();
+        const repoResponse = yield defaultOctokit.request(`/repos/${repo}`);
+        const repoId = repoResponse.data['id'];
         // Finally, use the App auth and installation ID to obtain an App installation access token.
         // See https://octokit.github.io/rest.js/v18#apps
         const tokenResponse = yield appOctokit.apps.createInstallationAccessToken({
-            installation_id: installationResponse.data['id'],
+            installation_id: installationId,
+            repository_ids: [repoId]
         });
         return tokenResponse.data['token'];
     });
