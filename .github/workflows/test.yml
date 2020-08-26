@@ -20,6 +20,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: ./
+        id: get_token
         with:
-          GITHUB_APP_ID: foo
-          GITHUB_APP_PEM: bar
+          GITHUB_APP_ID: ${{ secrets.RYANDY_BOT_APP_ID }}
+          GITHUB_APP_PEM: ${{ secrets.RYANDY_BOT_APP_PEM }}
+      - run: |
+          echo ${{ steps.get_token.outputs.GITHUB_APP_TOKEN }}
