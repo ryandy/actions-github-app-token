@@ -4,9 +4,8 @@ import {Octokit} from '@octokit/rest'
 
 export async function getAppToken(appId: string,
                                   appPemEncoded: string,
-                                  repository: string): Promise<string> {
+                                  repo: string): Promise<string> {
   const appPem: string = Buffer.from(appPemEncoded, 'base64').toString()
-  const [owner, repo]: string[] = repository.split('/')
 
   // Using the App ID and private key, create an App auth.
   // See https://octokit.github.io/rest.js/v18#authentication
@@ -21,13 +20,22 @@ export async function getAppToken(appId: string,
   // Using the App auth and repo name, obtain the App installation ID.
   // See https://docs.github.com/en/rest/reference/apps
   const installationResponse = await appOctokit.request(
-    `/repos/${owner}/${repo}/installation`
+    `/repos/${repo}/installation`
   )
+  const installationId: number = installationResponse.data['id']
 
-  // Finally, use the App auth and installation ID to obtain an App installation access token.
+  // Get the current repo's ID.
+  // See https://docs.github.com/en/rest/reference/repos
+  const defaultOctokit: Octokit = new Octokit()
+  const repoResponse = await defaultOctokit.request(`/repos/${repo}`)
+  const repoId: number = repoResponse.data['id']
+
+  // Finally, use the App auth and installation ID to obtain an App installation access token
+  // with access limited to the current repo.
   // See https://octokit.github.io/rest.js/v18#apps
   const tokenResponse = await appOctokit.apps.createInstallationAccessToken({
-    installation_id: installationResponse.data['id'],
+    installation_id: installationId,
+    repository_ids: [repoId]
   })
   return tokenResponse.data['token']
 }

@@ -12,9 +12,9 @@ async function run(): Promise<void> {
     if (!process.env.GITHUB_REPOSITORY) {
       throw new Error('Unexpected error: Missing GITHUB_REPOSITORY env variable');
     }
-    const repository: string = process.env.GITHUB_REPOSITORY
+    const repo: string = process.env.GITHUB_REPOSITORY
 
-    const appToken: string = await getAppToken(appId, appPemEncoded, repository)
+    const appToken: string = await getAppToken(appId, appPemEncoded, repo)
     core.setSecret(appToken)
     core.setOutput('GITHUB_APP_TOKEN', appToken)
   } catch (error) {
