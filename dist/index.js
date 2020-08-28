@@ -4917,6 +4917,25 @@ module.exports = SignStream;
 
 "use strict";
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -4928,6 +4947,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getAppToken = void 0;
+const core = __importStar(__webpack_require__(186));
 const auth_app_1 = __webpack_require__(541);
 const rest_1 = __webpack_require__(375);
 function getAppToken(appId, appPemEncoded, repo) {
@@ -4935,6 +4955,7 @@ function getAppToken(appId, appPemEncoded, repo) {
         const appPem = Buffer.from(appPemEncoded, 'base64').toString();
         // Using the App ID and private key, create an App auth.
         // See https://octokit.github.io/rest.js/v18#authentication
+        core.info('Create App auth');
         const appOctokit = new rest_1.Octokit({
             authStrategy: auth_app_1.createAppAuth,
             auth: {
@@ -4944,14 +4965,19 @@ function getAppToken(appId, appPemEncoded, repo) {
         });
         // Using the App auth and repo name, obtain the App installation ID.
         // See https://docs.github.com/en/rest/reference/apps
+        core.info('Get App installation ID');
         const installationResponse = yield appOctokit.request(`/repos/${repo}/installation`);
         const installationId = installationResponse.data['id'];
         // Get the current repo's ID.
+        // See https://docs.github.com/en/rest/reference/repos
+        core.info('Get repo ID');
         const defaultOctokit = new rest_1.Octokit();
         const repoResponse = yield defaultOctokit.request(`/repos/${repo}`);
         const repoId = repoResponse.data['id'];
-        // Finally, use the App auth and installation ID to obtain an App installation access token.
+        // Finally, use the App auth and installation ID to obtain an App installation access token
+        // with access limited to the current repo.
         // See https://octokit.github.io/rest.js/v18#apps
+        core.info('Create App installation token');
         const tokenResponse = yield appOctokit.apps.createInstallationAccessToken({
             installation_id: installationId,
             repository_ids: [repoId]
