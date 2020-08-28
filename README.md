@@ -4,6 +4,8 @@
 
 This Action can obtain an authenticated App installation token using a GitHub App ID and private key. You can use this token inside an Actions workflow instead of GITHUB_TOKEN, in cases where the GITHUB_TOKEN does not meet your needs.
 
+This Action is a typescript port of [machine-learning-apps/actions-app-token](https://github.com/machine-learning-apps/actions-app-token).
+
 ## Background
 
 [GitHub Actions](https://github.com/features/actions) allows for easy, powerful workflow automation. But it has one significant shortcoming that limits its potential: [one workflow cannot kick off another workflow](https://docs.github.com/en/actions/configuring-and-managing-workflows/authenticating-with-the-github_token#using-the-github_token-in-a-workflow). For example, if you have an auto-formatting job that pushes small code changes to a PR branch, that pull_request.synchronize event would not kick off any workflows, even if a pull_request workflow is defined for that repo. This is advertised as a [feature](https://docs.github.com/en/actions/reference/events-that-trigger-workflows#triggering-new-workflows-using-a-personal-access-token) of GitHub Actions because it prevents incidental infinite recursion. Unfortunately there’s no way to turn this feature off, and there’s no obvious way to work around it.
@@ -36,26 +38,28 @@ Create two [GitHub secrets](https://docs.github.com/en/actions/configuring-and-m
 
 ```yaml
   - uses: ryandy/actions-github-app-token@main
-    id: get_token
+    id: app_token
     with:
+      GITHUB_TOKEN: ${{ github.token }}
       GITHUB_APP_ID: ${{ secrets.YOUR_APP_ID }}
       GITHUB_APP_PEM: ${{ secrets.YOUR_BASE64_ENCODED_APP_PEM }}
   - uses: pascalgn/automerge-action@master
     env:
-      GITHUB_TOKEN: "${{ steps.get_token.outputs.GITHUB_APP_TOKEN }}"
+      GITHUB_TOKEN: "${{ steps.app_token.outputs.GITHUB_APP_TOKEN }}"
 ```
 
 ### Pushing Code
 
 ```yaml
   - uses: ryandy/actions-github-app-token@main
-    id: get_token
+    id: app_token
     with:
+      GITHUB_TOKEN: ${{ github.token }}
       GITHUB_APP_ID: ${{ secrets.YOUR_APP_ID }}
       GITHUB_APP_PEM: ${{ secrets.YOUR_BASE64_ENCODED_APP_PEM }}
   - uses: ad-m/github-push-action@master
     with:
-      github_token: ${{ steps.get_token.outputs.GITHUB_APP_TOKEN }}
+      github_token: ${{ steps.app_token.outputs.GITHUB_APP_TOKEN }}
 ```
 
 ## Security
@@ -68,7 +72,7 @@ The Action takes care of registering the generated installation token as a secre
 
 Uploading your App's private key as a GitHub secret is a one-time process with limited risk, assuming good precautions are taken (e.g. deleting the local key file after uploading).
 
-Additional documentation about [creating App installation tokens](https://docs.github.com/en/rest/reference/apps#create-an-installation-access-token-for-an-app) and [authenticating as an App installation](https://docs.github.com/en/developers/apps/authenticating-with-github-apps#authenticating-as-an-installation).
+See additional documentation about [creating App installation tokens](https://docs.github.com/en/rest/reference/apps#create-an-installation-access-token-for-an-app) and [authenticating as an App installation](https://docs.github.com/en/developers/apps/authenticating-with-github-apps#authenticating-as-an-installation).
 
 ## Contributing
 

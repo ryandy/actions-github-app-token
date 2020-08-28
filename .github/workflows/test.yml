@@ -31,7 +31,7 @@ jobs:
       - uses: ./
         id: app_token
         with:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
           GITHUB_APP_ID: ${{ secrets.RYANDY_BOT_APP_ID }}
           GITHUB_APP_PEM: ${{ secrets.RYANDY_BOT_APP_PEM }}
       - run: |
