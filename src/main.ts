@@ -6,6 +6,7 @@ import {getAppToken} from './app_token'
 async function run(): Promise<void> {
   try {
     // The App ID and private key are required Action inputs.
+    const actionToken: string = core.getInput('GITHUB_TOKEN')
     const appId: string = core.getInput('GITHUB_APP_ID')
     const appPemEncoded: string = core.getInput('GITHUB_APP_PEM')
 
@@ -14,7 +15,7 @@ async function run(): Promise<void> {
     }
     const repo: string = process.env.GITHUB_REPOSITORY
 
-    const appToken: string = await getAppToken(appId, appPemEncoded, repo)
+    const appToken: string = await getAppToken(actionToken, appId, appPemEncoded, repo)
     core.setSecret(appToken)
     core.setOutput('GITHUB_APP_TOKEN', appToken)
   } catch (error) {

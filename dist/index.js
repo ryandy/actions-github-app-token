@@ -1903,13 +1903,14 @@ function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             // The App ID and private key are required Action inputs.
+            const actionToken = core.getInput('GITHUB_TOKEN');
             const appId = core.getInput('GITHUB_APP_ID');
             const appPemEncoded = core.getInput('GITHUB_APP_PEM');
             if (!process.env.GITHUB_REPOSITORY) {
                 throw new Error('Unexpected error: Missing GITHUB_REPOSITORY env variable');
             }
             const repo = process.env.GITHUB_REPOSITORY;
-            const appToken = yield app_token_1.getAppToken(appId, appPemEncoded, repo);
+            const appToken = yield app_token_1.getAppToken(actionToken, appId, appPemEncoded, repo);
             core.setSecret(appToken);
             core.setOutput('GITHUB_APP_TOKEN', appToken);
         }
@@ -4950,7 +4951,7 @@ exports.getAppToken = void 0;
 const core = __importStar(__webpack_require__(186));
 const auth_app_1 = __webpack_require__(541);
 const rest_1 = __webpack_require__(375);
-function getAppToken(appId, appPemEncoded, repo) {
+function getAppToken(actionToken, appId, appPemEncoded, repo) {
     return __awaiter(this, void 0, void 0, function* () {
         const appPem = Buffer.from(appPemEncoded, 'base64').toString();
         // Using the App ID and private key, create an App auth.
@@ -4971,8 +4972,10 @@ function getAppToken(appId, appPemEncoded, repo) {
         // Get the current repo's ID.
         // See https://docs.github.com/en/rest/reference/repos
         core.info('Get repo ID');
-        const defaultOctokit = new rest_1.Octokit();
-        const repoResponse = yield defaultOctokit.request(`/repos/${repo}`);
+        const actionOctokit = new rest_1.Octokit({
+            auth: actionToken
+        });
+        const repoResponse = yield actionOctokit.request(`/repos/${repo}`);
         const repoId = repoResponse.data['id'];
         // Finally, use the App auth and installation ID to obtain an App installation access token
         // with access limited to the current repo.

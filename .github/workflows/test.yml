@@ -29,9 +29,10 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: ./
-        id: get_token
+        id: app_token
         with:
+          GITHUB_TOKEN: ${{ github.token }}
           GITHUB_APP_ID: ${{ secrets.RYANDY_BOT_APP_ID }}
           GITHUB_APP_PEM: ${{ secrets.RYANDY_BOT_APP_PEM }}
       - run: |
-          echo "Masked output token: ${{ steps.get_token.outputs.GITHUB_APP_TOKEN }}"
+          echo "Masked output token: ${{ steps.app_token.outputs.GITHUB_APP_TOKEN }}"

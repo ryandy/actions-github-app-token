@@ -3,7 +3,8 @@ import {createAppAuth} from '@octokit/auth-app'
 import {Octokit} from '@octokit/rest'
 
 
-export async function getAppToken(appId: string,
+export async function getAppToken(actionToken: string,
+                                  appId: string,
                                   appPemEncoded: string,
                                   repo: string): Promise<string> {
   const appPem: string = Buffer.from(appPemEncoded, 'base64').toString()
@@ -30,8 +31,10 @@ export async function getAppToken(appId: string,
   // Get the current repo's ID.
   // See https://docs.github.com/en/rest/reference/repos
   core.info('Get repo ID')
-  const defaultOctokit: Octokit = new Octokit()
-  const repoResponse = await defaultOctokit.request(`/repos/${repo}`)
+  const actionOctokit: Octokit = new Octokit({
+    auth: actionToken
+  })
+  const repoResponse = await actionOctokit.request(`/repos/${repo}`)
   const repoId: number = repoResponse.data['id']
 
   // Finally, use the App auth and installation ID to obtain an App installation access token

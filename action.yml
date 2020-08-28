@@ -2,6 +2,9 @@ name: actions-github-app-token
 description: Obtain a GitHub App installation token
 author: Ryan Anderson
 inputs:
+  GITHUB_TOKEN:
+    description: the auto-generated GitHub Action token
+    required: true
   GITHUB_APP_ID:
     description: your GitHub App ID
     required: true
