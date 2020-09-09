@@ -45,7 +45,7 @@ Create two [GitHub secrets](https://docs.github.com/en/actions/configuring-and-m
       GITHUB_APP_PEM: ${{ secrets.YOUR_BASE64_ENCODED_APP_PEM }}
   - uses: pascalgn/automerge-action@master
     env:
-      GITHUB_TOKEN: "${{ steps.app_token.outputs.GITHUB_APP_TOKEN }}"
+      GITHUB_TOKEN: ${{ steps.app_token.outputs.GITHUB_APP_TOKEN }}
 ```
 
 ### Pushing Code
