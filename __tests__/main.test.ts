@@ -2,9 +2,8 @@ import * as cp from 'child_process'
 import * as path from 'path'
 import * as process from 'process'
 
-import {getAppToken} from '../src/app_token'
 
-
+// TODO: Currently fails due to bad PEM.
 // shows how the runner will run a javascript action with env / stdout protocol
 test('test runs', () => {
 //  process.env['INPUT_GITHUB_APP_ID'] = '123'
